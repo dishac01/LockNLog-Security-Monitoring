@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LockNLog — Home</title>
+  <style>
+    :root {
+      --bg: #0f1419;
+      --panel: #1a2332;
+      --border: #2d3a4d;
+      --text: #e6edf3;
+      --muted: #8b9cb3;
+      --accent: #3b82f6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      padding: 2rem 1.5rem;
+    }
+    .wrap { max-width: 560px; margin: 0 auto; }
+    h1 { margin: 0 0 0.5rem; font-size: 1.5rem; }
+    .meta { color: var(--muted); font-size: 0.9rem; margin-bottom: 1.5rem; }
+    .hero {
+      display: block;
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(59, 130, 246, 0.05));
+      border: 1px solid rgba(59, 130, 246, 0.35);
+      border-radius: 12px;
+      color: var(--text);
+      text-decoration: none;
+      font-weight: 600;
+      transition: background 0.15s ease, border-color 0.15s ease;
+    }
+    .hero:hover {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.28), rgba(59, 130, 246, 0.08));
+      border-color: rgba(59, 130, 246, 0.5);
+      text-decoration: none;
+    }
+    .hero span { display: block; font-size: 0.8rem; font-weight: 400; color: var(--muted); margin-top: 0.35rem; }
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1rem;
+    }
+    .card h2 { margin: 0 0 0.75rem; font-size: 1rem; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+    a.link {
+      display: inline-block;
+      color: var(--accent);
+      text-decoration: none;
+      margin-right: 1rem;
+      margin-bottom: 0.5rem;
+      font-size: 0.88rem;
+    }
+    a.link:hover { text-decoration: underline; }
+    .actions { margin-top: 1.5rem; }
+    .btn {
+      display: inline-block;
+      padding: 0.5rem 1rem;
+      background: #2d3a4d;
+      color: var(--text);
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    .btn:hover { background: #3d4d66; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Signed in</h1>
+    <p class="meta">
+      <strong>{{ user.username }}</strong>
+      · role: <strong>{{ user.role }}</strong>
+      {% if user.department %}· {{ user.department }}{% endif %}
+    </p>
+
+    <a class="hero" href="{{ url_for('web.console') }}">
+      Open console
+      <span>Interactive logs, filters, risk &amp; anomaly columns, charts — same session as the API.</span>
+    </a>
+
+    <div class="card">
+      <h2>Raw JSON (same session cookie)</h2>
+      <p style="margin: 0 0 0.75rem; color: var(--muted); font-size: 0.9rem;">
+        Useful for debugging; the console above is the main UI.
+      </p>
+      <a class="link" href="/api/v1/me">/api/v1/me</a>
+      <a class="link" href="/api/v1/logs">/api/v1/logs</a>
+      <a class="link" href="/api/v1/dashboard">/api/v1/dashboard</a>
+    </div>
+
+    <div class="actions">
+      <a class="btn" href="{{ url_for('web.logout') }}">Log out</a>
+    </div>
+  </div>
+</body>
+</html>

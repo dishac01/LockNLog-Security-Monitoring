@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LockNLog — Console</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/console.css') }}" />
+  <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+  <script src="{{ url_for('static', filename='vendor/chartjs-chart-matrix.min.js') }}"></script>
+  <script>
+    window.__LOCKNLOG_ROLE__ = {{ user.role | tojson }};
+  </script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark"><img src="{{ url_for('static', filename='img/locknlog-logo.svg') }}" alt="LockNLog" style="width:26px;height:26px" /></span>
+      <span>LockNLog</span>
+    </div>
+    <div class="user-bar">
+      <span>{{ user.username }}</span>
+      <span class="role-pill">{{ user.role }}</span>
+      <a href="{{ url_for('web.home') }}" class="btn btn-ghost">Home</a>
+      <a href="{{ url_for('web.assets_page') }}" class="btn">Assets</a>
+      {% if user.role | lower == 'admin' %}
+      <a href="{{ url_for('web.admin_requests_page') }}" class="btn">Admin</a>
+      {% endif %}
+      <button type="button" class="btn btn-primary" id="btn-inject-logs">Inject Logs</button>
+      <select id="refresh-rate" class="btn" style="background:transparent;color:inherit;border:1px solid rgba(255,255,255,0.1);padding:0.25rem 0.5rem;border-radius:4px;font-size:0.875rem;">
+        <option value="0">Manual</option>
+        <option value="5000">5 sec</option>
+        <option value="10000">10 sec</option>
+        <option value="30000">30 sec</option>
+      </select>
+      <button type="button" class="btn btn-primary" id="btn-refresh">Refresh</button>
+      <a href="{{ url_for('web.logout') }}" class="btn">Log out</a>
+    </div>
+  </header>
+
+  <div id="error-banner" class="error-banner hidden"></div>
+  <div id="access-banner" class="access-banner hidden"></div>
+
+  <div class="loading" id="loading-state">
+    <span class="spinner" aria-hidden="true"></span>
+    <span>Loading logs…</span>
+  </div>
+
+  <div id="main-content" class="layout {% if user.role | lower == 'ceo' %}has-aside{% endif %} hidden">
+    <div class="main-panel">
+      {% if user.role | lower != 'ceo' %}
+      <div class="card" style="margin-bottom: 1rem">
+        <div class="card-head">
+          <h2>Overview</h2>
+        </div>
+        <div class="card-body">
+          <div id="overview-stats"></div>
+          <div id="chart-container" class="chart-wrap hidden">
+            <div id="dept-charts" class="dept-charts-grid hidden">
+              <!-- SOC -->
+              <div id="soc-chart-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Attack timeline (events / bucket)</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="socChart"></canvas></div>
+                <p class="ceo-chart-summary" id="soc-summary-timeline"></p>
+              </div>
+              <div id="soc-spike-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Alert spike detection</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="socSpikeChart"></canvas></div>
+                <p class="ceo-chart-summary" id="soc-summary-spikes"></p>
+              </div>
+              <div id="soc-heatmap-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Heatmap — asset vs risk band</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="socHeatmapChart"></canvas></div>
+                <p class="ceo-chart-summary">Square intensity = event count; color indicates risk band.</p>
+              </div>
+              <div id="soc-risktrend-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Risk trend (top assets)</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="socRiskTrendChart"></canvas></div>
+                <p class="ceo-chart-summary">Avg risk_score by asset over time.</p>
+              </div>
+              <div id="soc-eventdist-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Event type distribution</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="socEventDistChart"></canvas></div>
+              </div>
+              <div id="soc-sevbar-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Severity distribution</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="socSeverityBar"></canvas></div>
+              </div>
+              <div id="soc-topassets-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Top risky assets</h4>
+                <div id="socTopAssets" class="ceo-muted"></div>
+              </div>
+
+              <!-- Finance -->
+              <div id="finance-chart-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Transaction volume trend</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="finChart"></canvas></div>
+              </div>
+              <div id="fin-status-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Success vs failure</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="finStatusBar"></canvas></div>
+              </div>
+              <div id="fin-highvalue-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">High value transactions (top)</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="finHighValueBar"></canvas></div>
+              </div>
+              <div id="fin-violations-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Access violations</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="finViolationsBar"></canvas></div>
+              </div>
+              <div id="fin-exposure-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Financial risk exposure</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="finExposureTrend"></canvas></div>
+                <p class="ceo-chart-summary" id="fin-exposure-kpi"></p>
+              </div>
+
+              <!-- HR -->
+              <div id="hr-trend-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">User activity trend</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="hrActivityTrend"></canvas></div>
+              </div>
+              <div id="hr-dist-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Activity type distribution</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="hrActivityDist"></canvas></div>
+              </div>
+              <div id="hr-over-time-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Activity type over time</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="hrActivityOverTime"></canvas></div>
+              </div>
+              <div id="hr-topusers-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Top users</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="hrTopUsersBar"></canvas></div>
+              </div>
+              <div id="hr-offhours-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Off-hours access</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="hrOffHoursBar"></canvas></div>
+              </div>
+              <div id="hr-violations-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Violations</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="hrViolationsBar"></canvas></div>
+              </div>
+              <div id="hr-sensitive-wrap" class="ceo-chart-cell hidden">
+                <h4 class="ceo-chart-title">Sensitive data access</h4>
+                <div class="ceo-chart-canvas-wrap"><canvas id="hrSensitivePie"></canvas></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-head">
+          <h2>Log explorer</h2>
+          <div>
+            <button type="button" class="btn btn-ghost" id="btn-export-csv">Export CSV</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="toolbar">
+            <input type="search" id="filter-search" placeholder="Search in any field…" autocomplete="off" />
+            <button type="button" class="btn btn-ghost" id="btn-clear-filters">Clear filters</button>
+            <button type="button" class="btn btn-primary" id="btn-request-access">Request Access</button>
+            <select id="filter-severity" aria-label="Severity">
+              <option value="">All severities</option>
+              <option value="low">low</option>
+              <option value="medium">medium</option>
+              <option value="high">high</option>
+              <option value="critical">critical</option>
+            </select>
+            <select id="filter-type" aria-label="Log type">
+              <option value="">All types</option>
+              <option value="soc">soc</option>
+              <option value="finance">finance</option>
+              <option value="hr">hr</option>
+            </select>
+            <select id="filter-asset" aria-label="Asset">
+              <option value="">All assets</option>
+            </select>
+            <select id="filter-user" aria-label="User">
+              <option value="">All users</option>
+            </select>
+            <select id="filter-risk" aria-label="Risk band">
+              <option value="">All risk bands</option>
+              <option value="LOW">LOW</option>
+              <option value="MEDIUM">MEDIUM</option>
+              <option value="HIGH">HIGH</option>
+              <option value="CRITICAL">CRITICAL</option>
+            </select>
+            <input type="datetime-local" id="filter-start" aria-label="Start time" />
+            <input type="datetime-local" id="filter-end" aria-label="End time" />
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th id="logs-th-0" data-sort="timestamp">Time</th>
+                  <th id="logs-th-1">Col</th>
+                  <th id="logs-th-2">Col</th>
+                  <th id="logs-th-3">Col</th>
+                  <th id="logs-th-4">Col</th>
+                  <th id="logs-th-5">Col</th>
+                  <th id="logs-th-6">Col</th>
+                  <th id="logs-th-7">Col</th>
+                  <th id="logs-th-8">Details</th>
+                </tr>
+              </thead>
+              <tbody id="log-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <span id="pager-info"></span>
+            <span>
+              <button type="button" class="btn" id="btn-prev">Previous</button>
+              <button type="button" class="btn" id="btn-next">Next</button>
+            </span>
+          </div>
+        </div>
+      </div>
+      {% else %}
+      <div class="ceo-workspace">
+        <nav class="ceo-tabs" role="tablist" aria-label="Executive console sections">
+          <button type="button" class="ceo-tab is-active" role="tab" aria-selected="true" data-ceo-tab="overview">Overview</button>
+          <button type="button" class="ceo-tab" role="tab" aria-selected="false" data-ceo-tab="risk">Risk analytics</button>
+          <button type="button" class="ceo-tab" role="tab" aria-selected="false" data-ceo-tab="assets">Assets</button>
+          <button type="button" class="ceo-tab" role="tab" aria-selected="false" data-ceo-tab="compliance">Compliance</button>
+          <button type="button" class="ceo-tab" role="tab" aria-selected="false" data-ceo-tab="reports">Reports</button>
+          <button type="button" class="ceo-tab" role="tab" aria-selected="false" data-ceo-tab="recommendations">Recommendations</button>
+        </nav>
+
+        <div class="ceo-tab-panels">
+          <section id="ceo-panel-overview" class="ceo-tab-panel is-active" role="tabpanel" data-ceo-panel="overview">
+            <div id="ceo-overview-wins" class="ceo-overview-wins" aria-label="Operational momentum"></div>
+            <div class="ceo-overview-divider" role="presentation"></div>
+            <p class="ceo-section-kicker" id="ceo-kpi-kicker">Risk pulse — headline indicator</p>
+            <div id="ceo-kpi-strip" class="ceo-kpi-strip"></div>
+            <div id="ceo-exec-summary" class="ceo-exec-summary"></div>
+            <div class="card">
+              <div class="card-head"><h2>Enterprise coverage</h2></div>
+              <div class="card-body"><div id="overview-stats"></div></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <h2>Log explorer</h2>
+                <div>
+                  <button type="button" class="btn btn-ghost" id="btn-export-csv">Export CSV</button>
+                </div>
+              </div>
+              <div class="card-body">
+                <div class="toolbar">
+                  <input type="search" id="filter-search" placeholder="Search in any field…" autocomplete="off" />
+                  <button type="button" class="btn btn-ghost" id="btn-clear-filters">Clear filters</button>
+                  <select id="filter-severity" aria-label="Severity">
+                    <option value="">All severities</option>
+                    <option value="low">low</option>
+                    <option value="medium">medium</option>
+                    <option value="high">high</option>
+                    <option value="critical">critical</option>
+                  </select>
+                  <select id="filter-type" aria-label="Log type">
+                    <option value="">All types</option>
+                    <option value="soc">soc</option>
+                    <option value="finance">finance</option>
+                    <option value="hr">hr</option>
+                  </select>
+                  <select id="filter-risk" aria-label="Risk band">
+                    <option value="">All risk bands</option>
+                    <option value="LOW">LOW</option>
+                    <option value="MEDIUM">MEDIUM</option>
+                    <option value="HIGH">HIGH</option>
+                    <option value="CRITICAL">CRITICAL</option>
+                  </select>
+                </div>
+                <div class="table-wrap">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th data-sort="timestamp">Time</th>
+                        <th data-sort="log_type">Type</th>
+                        <th data-sort="event_type">Event</th>
+                        <th data-sort="severity">Severity</th>
+                        <th data-sort="risk_band">Risk</th>
+                        <th data-sort="anomaly_score">Anomaly</th>
+                        <th data-sort="risk_score">Risk score</th>
+                        <th data-sort="asset_name">Asset</th>
+                        <th>Meta</th>
+                      </tr>
+                    </thead>
+                    <tbody id="log-tbody"></tbody>
+                  </table>
+                </div>
+                <div class="pager">
+                  <span id="pager-info"></span>
+                  <span>
+                    <button type="button" class="btn" id="btn-prev">Previous</button>
+                    <button type="button" class="btn" id="btn-next">Next</button>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="ceo-panel-risk" class="ceo-tab-panel" role="tabpanel" hidden data-ceo-panel="risk">
+            <h3 class="ceo-panel-title">Risk analytics</h3>
+            <div id="ceo-insider-alerts" class="ceo-alerts-row"></div>
+            <div class="ceo-analytics-grid">
+              <div class="ceo-chart-cell">
+                <h4 class="ceo-chart-title">Department risk (avg score)</h4>
+                <div class="ceo-chart-canvas-wrap">
+                  <canvas id="ceoChartDeptBar"></canvas>
+                </div>
+                <p class="ceo-chart-summary" id="ceo-summary-dept"></p>
+              </div>
+              <div class="ceo-chart-cell">
+                <h4 class="ceo-chart-title">Portfolio risk trend (daily)</h4>
+                <div class="ceo-chart-canvas-wrap">
+                  <canvas id="ceoChartRiskTrend"></canvas>
+                </div>
+                <p class="ceo-chart-summary" id="ceo-summary-trend"></p>
+              </div>
+              <div class="ceo-chart-cell">
+                <h4 class="ceo-chart-title">Financial exposure trend (daily volume)</h4>
+                <div class="ceo-chart-canvas-wrap">
+                  <canvas id="ceoChartFinExpose"></canvas>
+                </div>
+                <p class="ceo-chart-summary" id="ceo-summary-finexp"></p>
+              </div>
+            </div>
+            <div id="ceo-charts-wrap" class="ceo-charts-wrap" aria-label="Funding and portfolio charts">
+              <h3 class="ceo-charts-heading">Funding &amp; portfolio detail</h3>
+              <div class="ceo-charts-grid">
+                <div class="ceo-chart-cell">
+                  <h4 class="ceo-chart-title">Funding flow</h4>
+                  <div class="ceo-chart-canvas-wrap ceo-chart-canvas-wrap--compact">
+                    <canvas id="ceoChartFinFlow"></canvas>
+                  </div>
+                  <p class="ceo-chart-summary" id="ceo-summary-flow"></p>
+                </div>
+                <div class="ceo-chart-cell">
+                  <h4 class="ceo-chart-title">Finance outcomes</h4>
+                  <div class="ceo-chart-canvas-wrap ceo-chart-canvas-wrap--compact">
+                    <canvas id="ceoChartFinStatus"></canvas>
+                  </div>
+                  <p class="ceo-chart-summary" id="ceo-summary-status"></p>
+                </div>
+                <div class="ceo-chart-cell">
+                  <h4 class="ceo-chart-title">Events by domain</h4>
+                  <div class="ceo-chart-canvas-wrap ceo-chart-canvas-wrap--compact">
+                    <canvas id="ceoChartDomain"></canvas>
+                  </div>
+                  <p class="ceo-chart-summary" id="ceo-summary-domain"></p>
+                </div>
+                <div class="ceo-chart-cell">
+                  <h4 class="ceo-chart-title">Portfolio risk bands</h4>
+                  <div class="ceo-chart-canvas-wrap ceo-chart-canvas-wrap--compact">
+                    <canvas id="ceoChartRisk"></canvas>
+                  </div>
+                  <p class="ceo-chart-summary" id="ceo-summary-riskbands"></p>
+                </div>
+              </div>
+            </div>
+
+            <div class="ceo-charts-wrap" aria-label="Executive decision widgets">
+              <h3 class="ceo-charts-heading">Decision widgets</h3>
+              <div class="ceo-priority-card" id="ceo-top-priority"></div>
+              <div class="ceo-charts-grid">
+                <div class="ceo-chart-cell">
+                  <h4 class="ceo-chart-title">Top risky users (avg risk)</h4>
+                  <div class="ceo-chart-canvas-wrap ceo-chart-canvas-wrap--compact">
+                    <canvas id="ceoChartTopUsers"></canvas>
+                  </div>
+                  <p class="ceo-chart-summary" id="ceo-summary-topusers"></p>
+                </div>
+                <div class="ceo-chart-cell">
+                  <h4 class="ceo-chart-title">Risk heatmap (asset vs department)</h4>
+                  <div class="ceo-chart-canvas-wrap ceo-chart-canvas-wrap--compact">
+                    <canvas id="ceoChartRiskHeatmap"></canvas>
+                  </div>
+                  <p class="ceo-chart-summary" id="ceo-summary-risk-heatmap">Cell intensity shows avg risk score by asset and department.</p>
+                </div>
+              </div>
+              <div class="ceo-chart-cell" style="margin-top:1rem">
+                <h4 class="ceo-chart-title">Decision hints</h4>
+                <div id="ceo-decision-hints" class="ceo-muted"></div>
+              </div>
+              <div class="ceo-charts-grid" style="margin-top:1rem">
+                <div class="ceo-chart-cell">
+                  <h4 class="ceo-chart-title">Anomaly hotspots</h4>
+                  <div id="ceo-anomaly-hotspots" class="ceo-muted"></div>
+                </div>
+                <div class="ceo-chart-cell">
+                  <h4 class="ceo-chart-title">Critical alerts feed</h4>
+                  <div id="ceo-critical-feed" class="ceo-muted"></div>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section id="ceo-panel-assets" class="ceo-tab-panel" role="tabpanel" hidden data-ceo-panel="assets">
+            <h3 class="ceo-panel-title">Top risky assets</h3>
+            <div id="ceo-assets-table" class="ceo-table-host"></div>
+            <div class="ceo-chart-cell ceo-chart-cell--assets" style="margin-top:1rem">
+              <h4 class="ceo-chart-title">Avg risk by asset (top 10)</h4>
+              <div class="ceo-chart-canvas-wrap ceo-chart-canvas-wrap--assets">
+                <canvas id="ceoChartAssetsBar"></canvas>
+              </div>
+              <p class="ceo-chart-summary" id="ceo-summary-assets"></p>
+            </div>
+          </section>
+
+          <section id="ceo-panel-compliance" class="ceo-tab-panel" role="tabpanel" hidden data-ceo-panel="compliance">
+            <h3 class="ceo-panel-title">Compliance &amp; risk mapping</h3>
+            <div id="ceo-compliance-card"></div>
+            <div id="ceo-risk-matrix" class="ceo-table-host" style="margin-top:1rem"></div>
+          </section>
+
+          <section id="ceo-panel-reports" class="ceo-tab-panel" role="tabpanel" hidden data-ceo-panel="reports">
+            <h3 class="ceo-panel-title">Reports</h3>
+            <div class="card">
+              <div class="card-body">
+                <p class="ceo-report-lead">
+                  Generate a <strong>daily PDF</strong> with portfolio risk score, financial exposure estimate,
+                  automated alerts, and top risky assets.
+                </p>
+                <a class="btn btn-primary" id="ceo-download-pdf" href="/api/v1/ceo/report/daily.pdf" download>Download daily PDF</a>
+                <p class="ceo-muted" style="margin-top:1rem">Uses the same session cookie; open this console while signed in.</p>
+              </div>
+            </div>
+          </section>
+
+          <section id="ceo-panel-recommendations" class="ceo-tab-panel" role="tabpanel" hidden data-ceo-panel="recommendations">
+            <h3 class="ceo-panel-title">Recommendations &amp; executive assistant</h3>
+            <div id="ceo-dept-recommendations" class="ceo-rec-cards"></div>
+            <div class="ceo-assistant-cta card" style="margin-top:1rem">
+              <div class="card-body">
+                <h4 class="ceo-cta-title">Executive summary — AI assistant</h4>
+                <p class="ceo-muted">
+                  The <strong>Executive assistant</strong> on the right blends your live asset archive, high-risk logs,
+                  and a curated mitigation playbook (TF-IDF). Use it for mitigation wording and board-ready narratives.
+                </p>
+                <button type="button" class="btn btn-primary" id="btn-focus-assistant">Focus assistant panel</button>
+              </div>
+            </div>
+            <div id="ceo-future-scope" class="ceo-future-scope card" style="margin-top:1rem">
+              <div class="card-body">
+                <h4 class="ceo-cta-title">Future scope</h4>
+                <ul id="ceo-future-list" class="ceo-future-list"></ul>
+              </div>
+            </div>
+          </section>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+
+    {% if user.role | lower == 'ceo' %}
+    <aside class="side-panel ai-panel" id="ceo-aside">
+      <div class="card chat-card" id="ceo-assistant-card">
+        <div class="card-head">
+          <h2>Executive assistant</h2>
+          <button type="button" class="btn btn-ghost" id="ceo-chat-clear" title="Clear conversation">Clear chat</button>
+        </div>
+        <div class="card-body chat-card-body">
+          <p class="chat-intro chat-intro--prominent">
+            <strong>Executive summary channel</strong> — trained retrieval (playbook + TF-IDF) with your
+            <strong>asset archive</strong> and <strong>high-risk logs</strong> injected each reply.
+          </p>
+          <div id="chat-thread" class="chat-thread" role="log" aria-live="polite"></div>
+          <div class="chat-input-row">
+            <textarea id="ceo-chat-input" rows="3" placeholder="e.g. What mitigations apply to internet-facing assets with CRITICAL risk?" autocomplete="off"></textarea>
+            <button type="button" class="btn btn-primary" id="ceo-chat-send">Send</button>
+          </div>
+          <div id="chat-status" class="chat-status" aria-live="assertive"></div>
+        </div>
+      </div>
+    </aside>
+    {% endif %}
+  </div>
+
+  <script src="{{ url_for('static', filename='js/console.js') }}"></script>
+
+  <dialog class="modal" id="log-modal">
+    <form method="dialog" class="modal-card">
+      <div class="modal-head">
+        <strong id="log-modal-title">Log detail</strong>
+        <button type="submit" class="btn btn-ghost">Close</button>
+      </div>
+      <div class="modal-body" id="log-modal-body"></div>
+    </form>
+  </dialog>
+
+  <dialog class="modal" id="access-modal">
+    <form method="dialog" class="modal-card" id="access-modal-form">
+      <div class="modal-head">
+        <strong>Request temporary access</strong>
+        <button type="submit" class="btn btn-ghost">Close</button>
+      </div>
+      <div class="modal-body">
+        <label class="field">
+          <span class="field-label">Target Department</span>
+          <select id="access-target" required>
+            <option value="IT">IT (SOC)</option>
+            <option value="Finance">Finance</option>
+            <option value="HR">HR</option>
+          </select>
+        </label>
+        <label class="field">
+          <span class="field-label">Duration (hours)</span>
+          <input type="number" id="access-duration" min="1" max="336" value="8" required />
+        </label>
+        <label class="field">
+          <span class="field-label">Reason</span>
+          <textarea id="access-reason" rows="3" placeholder="Why do you need this access?" required></textarea>
+        </label>
+        <div style="display:flex;gap:0.5rem;justify-content:flex-end;margin-top:0.75rem">
+          <button type="button" class="btn btn-primary" id="access-submit">Submit request</button>
+        </div>
+        <p class="ceo-muted" id="access-modal-status" style="margin:0.65rem 0 0"></p>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

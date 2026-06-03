@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LockNLog — Sign in</title>
+  <style>
+    :root { --bg:#0b0b0f; --panel:rgba(255,255,255,.03); --border:#2d2b42; --text:#e6edf3; --muted:#8b9cb3; --accent:#7c3aed; --accent-hover:#6d28d9; --danger:#ef4444; }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+      background: radial-gradient(ellipse 120% 80% at 30% -10%, rgba(124,58,237,.32) 0%, transparent 45%), radial-gradient(ellipse 100% 70% at 80% 0, rgba(59,130,246,.18) 0%, transparent 40%), var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.2rem;
+    }
+    .card {
+      width: 100%;
+      max-width: 430px;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 2rem;
+      box-shadow: 0 0 0 1px rgba(124,58,237,.18),0 24px 48px rgba(0,0,0,.45),0 0 36px rgba(124,58,237,.2);
+      backdrop-filter: blur(8px);
+    }
+    h1 {
+      margin: 0 0 0.25rem;
+      font-size: 1.7rem;
+      font-weight: 600;
+      letter-spacing: -0.02em;
+      display:flex;align-items:center;gap:.55rem;
+    }
+    .subtitle {
+      margin: 0 0 1.75rem;
+      font-size: 0.875rem;
+      color: var(--muted);
+    }
+    label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.35rem;
+    }
+    input {
+      width: 100%;
+      padding: 0.65rem 0.75rem;
+      margin-bottom: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #0d1117;
+      color: var(--text);
+      font-size: 1rem;
+    }
+    input:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+    }
+    button {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      margin-top: 0.25rem;
+      border: none;
+      border-radius: 8px;
+      background: linear-gradient(90deg,var(--accent),#6d28d9);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 0 20px rgba(124,58,237,.45);
+    }
+    button:hover {
+      background: var(--accent-hover);
+    }
+    .error {
+      background: rgba(239, 68, 68, 0.12);
+      border: 1px solid rgba(239, 68, 68, 0.35);
+      color: #fca5a5;
+      padding: 0.65rem 0.75rem;
+      border-radius: 8px;
+      font-size: 0.875rem;
+      margin-bottom: 1rem;
+    }
+    .hint {
+      margin-top: 1.5rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.8rem;
+      color: var(--muted);
+      line-height: 1.5;
+    }
+    .hint code {
+      background: #0d1117;
+      padding: 0.1rem 0.35rem;
+      border-radius: 4px;
+      font-size: 0.78rem;
+    }
+    .flower-lock{position:relative;width:96px;height:96px;margin:0 auto 1rem}
+    .petal{position:absolute;left:50%;top:50%;width:18px;height:32px;margin-left:-9px;margin-top:-31px;background:linear-gradient(180deg,rgba(168,85,247,.9),rgba(124,58,237,.28));border:1px solid rgba(168,85,247,.4);border-radius:999px;transform-origin:50% 32px;box-shadow:0 0 14px rgba(124,58,237,.45)}
+    .petal:nth-child(1){transform:rotate(0deg)}.petal:nth-child(2){transform:rotate(45deg)}.petal:nth-child(3){transform:rotate(90deg)}.petal:nth-child(4){transform:rotate(135deg)}
+    .petal:nth-child(5){transform:rotate(180deg)}.petal:nth-child(6){transform:rotate(225deg)}.petal:nth-child(7){transform:rotate(270deg)}.petal:nth-child(8){transform:rotate(315deg)}
+    .flower-lock .center{position:absolute;left:50%;top:50%;width:32px;height:32px;margin:-16px 0 0 -16px;border:2px solid rgba(196,181,253,.9);border-radius:10px;display:grid;place-items:center;background:#0d1117}
+    .flower-lock .center::before{content:"";width:10px;height:8px;border:2px solid rgba(196,181,253,.9);border-bottom:none;border-radius:8px 8px 0 0;position:absolute;top:-9px}
+    .flower-lock.bloom .petal{animation:bloom .85s ease-in-out forwards}
+    .flower-lock.bloom .petal:nth-child(2){animation-delay:.05s}.flower-lock.bloom .petal:nth-child(3){animation-delay:.1s}.flower-lock.bloom .petal:nth-child(4){animation-delay:.15s}
+    .flower-lock.bloom .petal:nth-child(5){animation-delay:.2s}.flower-lock.bloom .petal:nth-child(6){animation-delay:.25s}.flower-lock.bloom .petal:nth-child(7){animation-delay:.3s}.flower-lock.bloom .petal:nth-child(8){animation-delay:.35s}
+    .flower-lock.bloom .center{animation:centerFade .6s ease forwards}
+    @keyframes bloom{to{transform:rotate(var(--r)) translateY(-12px) scale(1.04);box-shadow:0 0 22px rgba(124,58,237,.75)}}
+    @keyframes centerFade{to{opacity:.1;transform:scale(.84)}}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="flower-lock" id="flower-lock">
+      <i class="petal" style="--r:0deg"></i><i class="petal" style="--r:45deg"></i><i class="petal" style="--r:90deg"></i><i class="petal" style="--r:135deg"></i>
+      <i class="petal" style="--r:180deg"></i><i class="petal" style="--r:225deg"></i><i class="petal" style="--r:270deg"></i><i class="petal" style="--r:315deg"></i>
+      <div class="center"></div>
+    </div>
+    <h1><img src="{{ url_for('static', filename='img/locknlog-logo.svg') }}" alt="LockNLog" style="width:30px;height:30px" /> LockNLog</h1>
+    <p class="subtitle">Sign in to your account</p>
+
+    {% if error %}
+    <div class="error">{{ error }}</div>
+    {% endif %}
+
+    <form id="login-form" method="post" action="{{ url_for('web.login_post') }}" autocomplete="on">
+      <label for="username">Username</label>
+      <input id="username" name="username" type="text" required autofocus autocomplete="username" />
+
+      <label for="password">Password</label>
+      <input id="password" name="password" type="password" required autocomplete="current-password" />
+
+      <button id="login-submit" type="submit">Sign in</button>
+    </form>
+
+    <p class="hint">
+      After seeding, try <code>soc_user_1</code> / <code>password</code> or
+      <code>admin_user</code> / <code>password</code>.
+    </p>
+  </div>
+  <script>
+    document.addEventListener("DOMContentLoaded", () => {
+      const form = document.getElementById("login-form");
+      const flower = document.getElementById("flower-lock");
+      const submit = document.getElementById("login-submit");
+      let sent = false;
+      if (!form || !flower) return;
+      form.addEventListener("submit", (ev) => {
+        if (sent) return;
+        ev.preventDefault();
+        flower.classList.add("bloom");
+        if (submit) submit.disabled = true;
+        setTimeout(() => { sent = true; form.submit(); }, 700);
+      });
+    });
+  </script>
+</body>
+</html>

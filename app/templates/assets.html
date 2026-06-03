@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LockNLog — Asset Inventory</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/console.css') }}" />
+  <script src="{{ url_for('static', filename='vendor/chart.umd.min.js') }}"></script>
+  <script>
+    window.__LOCKNLOG_ROLE__ = {{ user.role | tojson }};
+    window.__LOCKNLOG_USER__ = {{ user.to_dict() | tojson }};
+  </script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand">
+      <span class="brand-mark"><img src="{{ url_for('static', filename='img/locknlog-logo.svg') }}" alt="LockNLog" style="width:26px;height:26px" /></span>
+      <span>LockNLog</span>
+    </div>
+    <div class="user-bar">
+      <span>{{ user.username }}</span>
+      <span class="role-pill">{{ user.role }}</span>
+      <a href="{{ url_for('web.home') }}" class="btn btn-ghost">Home</a>
+      <a href="{{ url_for('web.console') }}" class="btn">Console</a>
+      <a href="{{ url_for('web.logout') }}" class="btn">Log out</a>
+    </div>
+  </header>
+
+  <div class="layout has-aside" id="asset-layout">
+    <div class="main-panel">
+      <div class="card">
+        <div class="card-head">
+          <h2>Asset inventory</h2>
+          <div>
+            <button type="button" class="btn btn-primary" id="btn-refresh-assets">Refresh</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <div class="toolbar">
+            <input type="search" id="asset-search" placeholder="Search assets…" autocomplete="off" />
+            <select id="asset-dept" aria-label="Department">
+              <option value="">All departments</option>
+              <option value="IT">IT</option>
+              <option value="Finance">Finance</option>
+              <option value="HR">HR</option>
+            </select>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th data-sort="name">Asset Name</th>
+                  <th data-sort="department">Department</th>
+                  <th data-sort="criticality">Criticality</th>
+                  <th data-sort="business_value">Business Value</th>
+                  <th data-sort="risk_score">Risk Score</th>
+                  <th data-sort="last_activity">Last Activity</th>
+                </tr>
+              </thead>
+              <tbody id="asset-tbody"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <span id="asset-pager"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <aside class="side-panel" id="asset-detail">
+      <div class="card">
+        <div class="card-head"><h2>Asset detail</h2></div>
+        <div class="card-body">
+          <p class="ceo-muted" id="asset-detail-hint" style="margin:0">Select an asset to see risk trend, recent logs, and top users.</p>
+          <div id="asset-detail-body" class="hidden"></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/assets.js') }}"></script>
+</body>
+</html>
+

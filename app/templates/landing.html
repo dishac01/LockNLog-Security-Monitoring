@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>LockNLog — AI Security Intelligence</title>
+  <style>
+    :root { --bg:#0b0b0f; --purple:#7c3aed; --blue:#3b82f6; --text:#f5f3ff; --muted:#a1a1aa; --card:rgba(255,255,255,.04); }
+    *{box-sizing:border-box} body{margin:0;font-family:Segoe UI,system-ui;background:var(--bg);color:var(--text);overflow-x:hidden}
+    body::before{content:"";position:fixed;inset:0;background:radial-gradient(circle at 20% 10%,rgba(124,58,237,.28),transparent 35%),radial-gradient(circle at 80% 0%,rgba(59,130,246,.20),transparent 35%);animation:bgMove 12s ease-in-out infinite alternate;z-index:-3}
+    body::after{content:"";position:fixed;inset:0;background-image:linear-gradient(rgba(124,58,237,.07) 1px,transparent 1px),linear-gradient(90deg,rgba(124,58,237,.07) 1px,transparent 1px);background-size:44px 44px;z-index:-2;opacity:.22}
+    @keyframes bgMove{from{transform:translateY(-12px)}to{transform:translateY(10px)}}
+    .particles{position:fixed;inset:0;pointer-events:none;z-index:-1}.particles i{position:absolute;width:3px;height:3px;border-radius:50%;background:#a78bfa;opacity:.55;animation:float 8s linear infinite}
+    @keyframes float{from{transform:translateY(20px)}to{transform:translateY(-110vh)}}
+    .wrap{max-width:1120px;margin:0 auto;padding:2rem 1.2rem 4rem}
+    .nav{display:flex;justify-content:space-between;align-items:center}.brand{display:flex;align-items:center;gap:.7rem}.brand img{width:34px;height:34px;filter:drop-shadow(0 0 10px rgba(124,58,237,.5))}
+    .btn{background:linear-gradient(90deg,var(--purple),#6d28d9);color:#fff;border:none;padding:.75rem 1.1rem;border-radius:10px;text-decoration:none;display:inline-block;box-shadow:0 0 18px rgba(124,58,237,.45)}
+    .hero{padding:6rem 0 4rem;text-align:center;animation:heroIn .9s ease both}
+    @keyframes heroIn{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+    h1{margin:0;font-size:clamp(2.4rem,8vw,5.4rem);letter-spacing:.03em;text-shadow:0 0 26px rgba(124,58,237,.55)}
+    .sub{margin:1rem auto 1.6rem;color:var(--muted);max-width:660px;font-size:1.05rem}
+    .features{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem}
+    .card{background:var(--card);border:1px solid rgba(124,58,237,.22);backdrop-filter:blur(6px);border-radius:14px;padding:1rem;transform-style:preserve-3d;transition:.2s}
+    .card:hover{transform:translateY(-4px) rotateX(3deg);box-shadow:0 0 24px rgba(124,58,237,.25)}
+    .icon{font-size:1.2rem}
+    .preview{margin-top:2.4rem;display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:1rem}
+    .mock{height:120px;border-radius:14px;background:linear-gradient(180deg,rgba(124,58,237,.16),rgba(59,130,246,.08));border:1px solid rgba(124,58,237,.2);animation:floatBox 4s ease-in-out infinite}
+    .mock:nth-child(2){animation-delay:.5s}.mock:nth-child(3){animation-delay:1s}.mock:nth-child(4){animation-delay:1.4s}
+    @keyframes floatBox{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+    .reveal{opacity:0;transform:translateY(14px);transition:.7s}.reveal.on{opacity:1;transform:none}
+  </style>
+</head>
+<body>
+  <div class="particles" id="particles"></div>
+  <div class="wrap">
+    <div class="nav">
+      <div class="brand"><img src="{{ url_for('static', filename='img/locknlog-logo.svg') }}" alt="LockNLog" /><strong>LockNLog</strong></div>
+      <a href="{{ url_for('web.login_get') }}" class="btn">Sign In</a>
+    </div>
+    <section class="hero reveal on">
+      <h1>LockNLog</h1>
+      <p class="sub">AI-Powered Security Intelligence System</p>
+      <a href="{{ url_for('web.login_get') }}" class="btn">Enter Dashboard</a>
+    </section>
+    <section class="reveal">
+      <div class="features">
+        <div class="card"><div class="icon">📡</div><h3>Real-time monitoring</h3><p>Unified SOC, Finance, and HR telemetry.</p></div>
+        <div class="card"><div class="icon">🧠</div><h3>AI anomaly detection</h3><p>Behavioral spikes and threat signatures.</p></div>
+        <div class="card"><div class="icon">⚠️</div><h3>Risk intelligence</h3><p>Actionable scoring and priority focus.</p></div>
+        <div class="card"><div class="icon">🧭</div><h3>Multi-role dashboards</h3><p>Purpose-built views for decision makers.</p></div>
+      </div>
+    </section>
+    <section class="preview reveal">
+      <div class="mock"></div><div class="mock"></div><div class="mock"></div><div class="mock"></div>
+    </section>
+  </div>
+  <script>
+    const host=document.getElementById("particles");for(let i=0;i<52;i++){const d=document.createElement("i");d.style.left=Math.random()*100+"%";d.style.top=Math.random()*100+"%";d.style.animationDelay=(Math.random()*8).toFixed(2)+"s";d.style.opacity=(0.2+Math.random()*0.6).toFixed(2);host.appendChild(d);}
+    const io=new IntersectionObserver((entries)=>entries.forEach(e=>e.isIntersecting&&e.target.classList.add("on")), {threshold:.16});
+    document.querySelectorAll(".reveal").forEach(n=>io.observe(n));
+  </script>
+</body>
+</html>
